@@ -1,0 +1,89 @@
+from pathlib import Path
+
+# Project root: ~/CSE_253/assignment2
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+DATA_DIR = PROJECT_ROOT / "data"
+MAESTRO_ROOT = DATA_DIR / "maestro-v3.0.0"
+
+METADATA_CSV = MAESTRO_ROOT / "maestro-v3.0.0.csv"
+METADATA_JSON = MAESTRO_ROOT / "maestro-v3.0.0.json"
+
+CACHE_DIR = PROJECT_ROOT / "cache"
+METADATA_CACHE_DIR = CACHE_DIR / "metadata"
+
+OUTPUT_DIR = PROJECT_ROOT / "outputs"
+FIGURE_DIR = OUTPUT_DIR / "figures"
+AUDIO_OUTPUT_DIR = OUTPUT_DIR / "audio"
+CHECKPOINT_DIR = OUTPUT_DIR / "checkpoints"
+
+# ---------------------------------------------------------------------
+# MIDI/audio preprocessing parameters for Option 4
+# ---------------------------------------------------------------------
+
+SAMPLE_RATE = 22050
+HOP_LENGTH = 256
+FRAME_RATE = SAMPLE_RATE / HOP_LENGTH
+
+# Full piano range: A0 to C8
+MIDI_LOW = 21
+MIDI_HIGH = 108
+N_PITCHES = MIDI_HIGH - MIDI_LOW + 1
+
+# Default local window length for MIDI/audio aligned examples
+CLIP_SECONDS = 4.0
+
+# We mark onset over a small number of frames to make the feature robust
+# to frame quantization.
+ONSET_WIDTH_FRAMES = 2
+
+# ---------------------------------------------------------------------
+# Audio preprocessing parameters for Option 4
+# ---------------------------------------------------------------------
+
+N_FFT = 1024
+WIN_LENGTH = 1024
+N_MELS = 80
+
+# Piano fundamental range is roughly 27.5 Hz to 4186 Hz, but piano
+# harmonics extend higher. We keep fmax at Nyquist for a compact but
+# still broad log-mel target.
+FMIN = 30.0
+FMAX = SAMPLE_RATE / 2
+
+# Use centered STFT frames so each spectrogram frame is centered around
+# the corresponding time step. This makes the frame count naturally
+# match the MIDI piano-roll grid when using the same sample_rate/hop_length.
+CENTER = True
+
+# log(1 + mel) scaling for stable regression target.
+LOG_EPS = 1e-6
+
+# ---------------------------------------------------------------------
+# Option 4 window-index / dataset defaults
+# ---------------------------------------------------------------------
+
+DEFAULT_SUBSET_NAME = "debug"
+
+DEFAULT_CLIP_SECONDS = 4.0
+DEFAULT_STRIDE_SECONDS = 4.0
+
+DEFAULT_TRAIN_MAX_WINDOWS = 2000
+DEFAULT_VAL_MAX_WINDOWS = 400
+DEFAULT_TEST_MAX_WINDOWS = 400
+
+DEFAULT_RANDOM_SEED = 42
+
+# ---------------------------------------------------------------------
+# Shared project layout constants
+# ---------------------------------------------------------------------
+
+SHARED_OUTPUT_DIR = OUTPUT_DIR / "shared"
+OPTION2_OUTPUT_DIR = OUTPUT_DIR / "option2"
+OPTION4_OUTPUT_DIR = OUTPUT_DIR / "option4"
+FINAL_OUTPUT_DIR = OUTPUT_DIR / "final"
+
+WINDOW_INDEX_CACHE_DIR = CACHE_DIR / "window_index"
+OPTION2_CACHE_DIR = CACHE_DIR / "option2"
+OPTION4_CACHE_DIR = CACHE_DIR / "option4"
+
