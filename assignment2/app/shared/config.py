@@ -87,3 +87,24 @@ WINDOW_INDEX_CACHE_DIR = CACHE_DIR / "window_index"
 OPTION2_CACHE_DIR = CACHE_DIR / "option2"
 OPTION4_CACHE_DIR = CACHE_DIR / "option4"
 
+# ---------------------------------------------------------------------
+# Option 2: Symbolic conditioned generation constants
+# ---------------------------------------------------------------------
+
+OPTION2_FRAME_RATE = 40.0        # fps for symbolic piano-roll (~25 ms per frame)
+OPTION2_PREFIX_SECONDS = 4.0     # prefix duration fed as conditioning
+OPTION2_CONTINUATION_SECONDS = 4.0  # continuation duration to generate
+OPTION2_STRIDE_SECONDS = 2.0     # stride between consecutive windows
+
+OPTION2_D_MODEL = 128
+OPTION2_NHEAD = 4
+OPTION2_NUM_LAYERS = 4
+OPTION2_DIM_FEEDFORWARD = 512
+OPTION2_DROPOUT = 0.1
+
+OPTION2_BATCH_SIZE = 32
+OPTION2_LEARNING_RATE = 1e-3
+OPTION2_WEIGHT_DECAY = 1e-4
+OPTION2_MAX_EPOCHS = 20
+OPTION2_PATIENCE = 5             # early stopping patience
+
