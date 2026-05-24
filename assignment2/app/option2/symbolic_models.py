@@ -110,6 +110,7 @@ class SymbolicTransformer(nn.Module):
         prefix: torch.Tensor,
         cont_len: int,
         threshold: float = 0.5,
+        use_sampling: bool = True,
     ) -> torch.Tensor:
         """
         Autoregressively generate cont_len frames given a prefix.
@@ -117,7 +118,9 @@ class SymbolicTransformer(nn.Module):
         Args:
             prefix: (B, P, 88) or (P, 88) float tensor
             cont_len: number of frames to generate
-            threshold: sigmoid threshold for binarizing output
+            threshold: sigmoid threshold used when use_sampling=False
+            use_sampling: if True, sample each pitch from its Bernoulli probability
+                          (recommended — avoids all-silence when base rate is low)
 
         Returns:
             generated: (B, cont_len, 88) binary float tensor
@@ -130,12 +133,16 @@ class SymbolicTransformer(nn.Module):
         generated = []
 
         for _ in range(cont_len):
-            logits = self.forward(context)           # (B, T, 88)
-            next_frame = (torch.sigmoid(logits[:, -1:, :]) > threshold).float()
+            logits = self.forward(context)                       # (B, T, 88)
+            probs = torch.sigmoid(logits[:, -1:, :])             # (B, 1, 88)
+            if use_sampling:
+                next_frame = torch.bernoulli(probs)
+            else:
+                next_frame = (probs > threshold).float()
             generated.append(next_frame)
             context = torch.cat([context, next_frame], dim=1)
 
-        return torch.cat(generated, dim=1)           # (B, cont_len, 88)
+        return torch.cat(generated, dim=1)                       # (B, cont_len, 88)
 
     def count_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
