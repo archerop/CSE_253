@@ -40,7 +40,7 @@ def _step(
     pred = logits[:, prefix_len - 1 :, :]                       # (B, C, 88)
 
     # Piano-roll is ~2-3% active; upweight positives so model learns to predict notes
-    pos_weight = torch.full((pred.size(-1),), 10.0, device=pred.device)
+    pos_weight = torch.full((pred.size(-1),), 2.0, device=pred.device)
     return F.binary_cross_entropy_with_logits(pred, continuation, pos_weight=pos_weight)
 
 
