@@ -1,12 +1,12 @@
 """Evaluation metrics for Option 2 symbolic generation."""
 
-from typing import Dict
+from typing import Dict, List
 
 import numpy as np
 import torch
 from scipy.stats import entropy as scipy_entropy
 
-from app.shared.config import OPTION2_FRAME_RATE
+from app.shared.config import OPTION2_CONTINUATION_SECONDS, OPTION2_FRAME_RATE
 
 
 def note_density(roll: np.ndarray) -> float:
@@ -83,3 +83,17 @@ def print_metrics(metrics: Dict[str, float]) -> None:
     for k, v in metrics.items():
         print(f"  {k:<30s} {v:.4f}")
     print()
+
+
+def evaluate_token_generation(
+    pred_ids: List[int],
+    gt_ids: List[int],
+    tokenizer,
+    frame_rate: float = OPTION2_FRAME_RATE,
+    duration_seconds: float = OPTION2_CONTINUATION_SECONDS,
+) -> Dict[str, float]:
+    """Decode token sequences to piano-rolls and evaluate."""
+    from app.option2.symbolic_generate import tokens_to_pianoroll
+    pred_roll = tokens_to_pianoroll(pred_ids, tokenizer, frame_rate, duration_seconds)
+    gt_roll   = tokens_to_pianoroll(gt_ids,   tokenizer, frame_rate, duration_seconds)
+    return evaluate_generation(pred_roll, gt_roll)
