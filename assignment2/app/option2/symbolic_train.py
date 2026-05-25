@@ -1,12 +1,12 @@
-"""Training loop for Option 2 GPT-2 symbolic MIDI generation."""
+"""Training loop for Option 2 symbolic MIDI generation (model-agnostic)."""
 
 from pathlib import Path
 from typing import Dict, List
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from transformers import GPT2LMHeadModel
 
 from app.shared.config import (
     CHECKPOINT_DIR,
@@ -14,39 +14,40 @@ from app.shared.config import (
     OPTION2_LEARNING_RATE,
     OPTION2_MAX_EPOCHS,
     OPTION2_PATIENCE,
-    OPTION2_PREFIX_MAX_LEN,
     OPTION2_WEIGHT_DECAY,
 )
 
 
 def _step(
-    model: GPT2LMHeadModel,
+    model: nn.Module,
     prefix: torch.Tensor,
     continuation: torch.Tensor,
 ) -> torch.Tensor:
     """
-    One forward + loss step (teacher forcing, GPT-2 labels API).
+    One forward + loss step (teacher forcing, model-agnostic).
 
     prefix:       (B, P) LongTensor
     continuation: (B, C) LongTensor
 
     Input  = [prefix | cont[:-1]]  shape (B, P+C-1)
-    Labels = [-100 * P | cont[:-1]] shape (B, P+C-1)
-    GPT-2 computes cross-entropy only where labels != -100,
-    so only the continuation positions contribute to the loss.
+    Target = continuation           shape (B, C)
+    Loss   = cross-entropy over continuation positions only (PAD id=0 ignored).
     """
-    inp = torch.cat([prefix, continuation[:, :-1]], dim=1)        # (B, P+C-1)
-    labels = torch.cat([
-        torch.full_like(prefix, -100),
-        continuation[:, :-1],
-    ], dim=1)                                                      # (B, P+C-1)
-    # Mask PAD tokens (id=0) from attention so padding is ignored
-    attention_mask = (inp != 0).long()
-    return model(input_ids=inp, labels=labels, attention_mask=attention_mask).loss
+    P   = prefix.size(1)
+    inp = torch.cat([prefix, continuation[:, :-1]], dim=1)  # (B, P+C-1)
+
+    logits = model(inp)                   # (B, P+C-1, vocab_size)
+    pred   = logits[:, P - 1:, :]        # (B, C, vocab_size)
+
+    return F.cross_entropy(
+        pred.reshape(-1, pred.size(-1)),
+        continuation.reshape(-1),
+        ignore_index=0,  # PAD token
+    )
 
 
 def train_one_epoch(
-    model: GPT2LMHeadModel,
+    model: nn.Module,
     loader: DataLoader,
     optimizer: torch.optim.Optimizer,
     device: torch.device,
@@ -67,7 +68,7 @@ def train_one_epoch(
 
 @torch.no_grad()
 def evaluate(
-    model: GPT2LMHeadModel,
+    model: nn.Module,
     loader: DataLoader,
     device: torch.device,
 ) -> float:
@@ -76,12 +77,12 @@ def evaluate(
     for prefix, continuation in loader:
         prefix       = prefix.to(device)
         continuation = continuation.to(device)
-        total_loss += _step(model, prefix, continuation).item()
+        total_loss  += _step(model, prefix, continuation).item()
     return total_loss / len(loader)
 
 
 def train(
-    model: GPT2LMHeadModel,
+    model: nn.Module,
     train_loader: DataLoader,
     val_loader: DataLoader,
     device: torch.device,
@@ -141,10 +142,10 @@ def train(
 
 
 def load_best_checkpoint(
-    model: GPT2LMHeadModel,
+    model: nn.Module,
     checkpoint_path: Path = CHECKPOINT_DIR / "option2_best.pt",
     device: torch.device = torch.device("cpu"),
-) -> GPT2LMHeadModel:
+) -> nn.Module:
     ckpt = torch.load(checkpoint_path, map_location=device, weights_only=True)
     model.load_state_dict(ckpt["model_state_dict"])
     print(f"Loaded checkpoint from epoch {ckpt['epoch']} (val_loss={ckpt['val_loss']:.4f})")

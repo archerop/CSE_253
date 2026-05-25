@@ -115,3 +115,7 @@ OPTION2_GPT2_N_LAYER   = 6
 OPTION2_GPT2_N_HEAD    = 8
 OPTION2_GPT2_N_EMBD    = 384
 
+OPTION2_MODEL_TYPE     = 'transformer'  # 'lstm' | 'gru' | 'transformer' | 'gpt2'
+OPTION2_HIDDEN_SIZE    = 256            # hidden dim for LSTM / GRU
+OPTION2_RNN_LAYERS     = 2             # depth for LSTM / GRU
+
