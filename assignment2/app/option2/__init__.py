@@ -17,7 +17,15 @@ from app.option2.symbolic_generate import (
     extract_prefix,
     tokens_to_pianoroll,
 )
-from app.option2.symbolic_eval import evaluate_generation, evaluate_token_generation, print_metrics
+from app.option2.symbolic_eval import (
+    evaluate_generation,
+    evaluate_token_generation,
+    evaluate_dataset,
+    print_metrics,
+    print_dataset_metrics,
+    mgeval_features,
+    fmd,
+)
 
 __all__ = [
     "SymbolicDataset",
@@ -37,5 +45,9 @@ __all__ = [
     "tokens_to_pianoroll",
     "evaluate_generation",
     "evaluate_token_generation",
+    "evaluate_dataset",
     "print_metrics",
+    "print_dataset_metrics",
+    "mgeval_features",
+    "fmd",
 ]
