@@ -108,3 +108,10 @@ OPTION2_WEIGHT_DECAY = 1e-4
 OPTION2_MAX_EPOCHS = 5
 OPTION2_PATIENCE = 5             # early stopping patience
 
+OPTION2_PREFIX_MAX_LEN = 256     # max tokens for 4s prefix
+OPTION2_CONT_MAX_LEN   = 256     # max tokens for 4s continuation
+OPTION2_MAX_SEQ_LEN    = 512     # PREFIX + CONT fed to model
+OPTION2_GPT2_N_LAYER   = 6
+OPTION2_GPT2_N_HEAD    = 8
+OPTION2_GPT2_N_EMBD    = 384
+

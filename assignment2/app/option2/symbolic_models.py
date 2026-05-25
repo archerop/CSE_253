@@ -1,148 +1,83 @@
-"""Model architectures for Option 2 symbolic conditioned generation."""
-
-import math
+"""GPT-2 model for Option 2 symbolic conditioned MIDI generation."""
 
 import torch
-import torch.nn as nn
+import torch.nn.functional as F
+from transformers import GPT2Config, GPT2LMHeadModel
 
 from app.shared.config import (
-    N_PITCHES,
-    OPTION2_D_MODEL,
-    OPTION2_DIM_FEEDFORWARD,
     OPTION2_DROPOUT,
-    OPTION2_NHEAD,
-    OPTION2_NUM_LAYERS,
+    OPTION2_GPT2_N_EMBD,
+    OPTION2_GPT2_N_HEAD,
+    OPTION2_GPT2_N_LAYER,
+    OPTION2_MAX_SEQ_LEN,
 )
 
 
-class CopyLastFrameBaseline(nn.Module):
-    """Baseline: repeat the last prefix frame for the full continuation."""
-
-    def forward(self, prefix: torch.Tensor, cont_len: int) -> torch.Tensor:
-        # prefix: (B, P, 88) → returns (B, cont_len, 88)
-        last = prefix[:, -1:, :]
-        return last.expand(-1, cont_len, -1)
-
-
-class PositionalEncoding(nn.Module):
-    def __init__(self, d_model: int, max_len: int = 2000, dropout: float = 0.1):
-        super().__init__()
-        self.dropout = nn.Dropout(dropout)
-        pe = torch.zeros(max_len, d_model)
-        position = torch.arange(max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(
-            torch.arange(0, d_model, 2, dtype=torch.float) * (-math.log(10000.0) / d_model)
-        )
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
-        self.register_buffer("pe", pe.unsqueeze(0))  # (1, max_len, d_model)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x: (B, T, d_model)
-        x = x + self.pe[:, : x.size(1)]
-        return self.dropout(x)
+def build_gpt2_model(vocab_size: int, pad_token_id: int = 0) -> GPT2LMHeadModel:
+    """Small GPT-2 (~15-20M params) for token-level piano generation."""
+    config = GPT2Config(
+        vocab_size=vocab_size,
+        n_positions=OPTION2_MAX_SEQ_LEN,
+        n_embd=OPTION2_GPT2_N_EMBD,
+        n_layer=OPTION2_GPT2_N_LAYER,
+        n_head=OPTION2_GPT2_N_HEAD,
+        pad_token_id=pad_token_id,
+        bos_token_id=1,
+        eos_token_id=2,
+        resid_pdrop=OPTION2_DROPOUT,
+        embd_pdrop=OPTION2_DROPOUT,
+        attn_pdrop=OPTION2_DROPOUT,
+    )
+    return GPT2LMHeadModel(config)
 
 
-class SymbolicTransformer(nn.Module):
+@torch.no_grad()
+def generate_tokens(
+    model: GPT2LMHeadModel,
+    prefix_ids: torch.Tensor,
+    max_new_tokens: int,
+    temperature: float = 1.0,
+    top_k: int = 50,
+    device: str = "cpu",
+) -> torch.Tensor:
     """
-    Causal Transformer decoder for autoregressive piano-roll prediction.
+    Autoregressively generate max_new_tokens tokens after prefix_ids.
 
-    During training (teacher forcing):
-      - input = [prefix | continuation[:-1]]  shape (B, P+C-1, 88)
-      - loss computed on output[:, P-1:, :] vs continuation  (B, C, 88)
-
-    During generation:
-      - prefix fed as context, continuation grown autoregressively
+    Args:
+        prefix_ids: (1, P) LongTensor
+    Returns:
+        (1, max_new_tokens) LongTensor — generated tokens only
     """
+    model.eval()
+    model = model.to(device)
+    context = prefix_ids.to(device)
 
-    def __init__(
-        self,
-        n_pitches: int = N_PITCHES,
-        d_model: int = OPTION2_D_MODEL,
-        nhead: int = OPTION2_NHEAD,
-        num_layers: int = OPTION2_NUM_LAYERS,
-        dim_feedforward: int = OPTION2_DIM_FEEDFORWARD,
-        dropout: float = OPTION2_DROPOUT,
-        max_seq_len: int = 1000,
-    ):
-        super().__init__()
-        self.n_pitches = n_pitches
-        self.d_model = d_model
+    for _ in range(max_new_tokens):
+        ctx    = context[:, -OPTION2_MAX_SEQ_LEN:]
+        logits = model(input_ids=ctx).logits[:, -1, :]  # (1, vocab_size)
 
-        self.input_proj = nn.Linear(n_pitches, d_model)
-        self.pos_enc = PositionalEncoding(d_model, max_seq_len, dropout)
+        logits = logits / max(temperature, 1e-8)
+        if top_k > 0:
+            top_vals, _ = torch.topk(logits, min(top_k, logits.size(-1)))
+            logits[logits < top_vals[:, -1:]] = float("-inf")
 
-        encoder_layer = nn.TransformerEncoderLayer(
-            d_model=d_model,
-            nhead=nhead,
-            dim_feedforward=dim_feedforward,
-            dropout=dropout,
-            batch_first=True,
-            norm_first=True,  # pre-norm for training stability
-        )
-        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
-        self.output_proj = nn.Linear(d_model, n_pitches)
+        probs    = F.softmax(logits, dim=-1)
+        next_tok = torch.multinomial(probs, num_samples=1)  # (1, 1)
+        context  = torch.cat([context, next_tok], dim=1)
 
-        self._init_weights()
+    return context[:, prefix_ids.size(1):]  # generated part only
 
-    def _init_weights(self) -> None:
-        nn.init.xavier_uniform_(self.input_proj.weight)
-        nn.init.zeros_(self.input_proj.bias)
-        nn.init.xavier_uniform_(self.output_proj.weight)
-        nn.init.zeros_(self.output_proj.bias)
 
-    @staticmethod
-    def _causal_mask(seq_len: int, device: torch.device) -> torch.Tensor:
-        """Upper-triangular mask (True = ignore) for causal attention."""
-        return torch.triu(torch.ones(seq_len, seq_len, device=device), diagonal=1).bool()
+class CopyLastPatternBaseline:
+    """Baseline: cycle the last CONT_MAX_LEN tokens from the prefix."""
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x: (B, T, 88) → logits (B, T, 88)
-        T = x.size(1)
-        h = self.pos_enc(self.input_proj(x))
-        mask = self._causal_mask(T, x.device)
-        h = self.transformer(h, mask=mask, is_causal=True)
-        return self.output_proj(h)
-
-    @torch.no_grad()
-    def generate(
-        self,
-        prefix: torch.Tensor,
-        cont_len: int,
-        threshold: float = 0.5,
-        use_sampling: bool = True,
-    ) -> torch.Tensor:
+    def generate(self, prefix_ids: torch.Tensor, cont_len: int) -> torch.Tensor:
         """
-        Autoregressively generate cont_len frames given a prefix.
-
         Args:
-            prefix: (B, P, 88) or (P, 88) float tensor
-            cont_len: number of frames to generate
-            threshold: sigmoid threshold used when use_sampling=False
-            use_sampling: if True, sample each pitch from its Bernoulli probability
-                          (recommended — avoids all-silence when base rate is low)
-
+            prefix_ids: (B, P) LongTensor
         Returns:
-            generated: (B, cont_len, 88) binary float tensor
+            (B, cont_len) LongTensor
         """
-        self.eval()
-        if prefix.dim() == 2:
-            prefix = prefix.unsqueeze(0)
-
-        context = prefix.clone()
-        generated = []
-
-        for _ in range(cont_len):
-            logits = self.forward(context)                       # (B, T, 88)
-            probs = torch.sigmoid(logits[:, -1:, :])             # (B, 1, 88)
-            if use_sampling:
-                next_frame = torch.bernoulli(probs)
-            else:
-                next_frame = (probs > threshold).float()
-            generated.append(next_frame)
-            context = torch.cat([context, next_frame], dim=1)
-
-        return torch.cat(generated, dim=1)                       # (B, cont_len, 88)
-
-    def count_parameters(self) -> int:
-        return sum(p.numel() for p in self.parameters() if p.requires_grad)
+        B, P = prefix_ids.shape
+        indices = torch.arange(cont_len, device=prefix_ids.device) % P
+        return prefix_ids[:, indices]

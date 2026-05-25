@@ -1,12 +1,12 @@
-"""Training loop for Option 2 symbolic Transformer."""
+"""Training loop for Option 2 GPT-2 symbolic MIDI generation."""
 
 from pathlib import Path
 from typing import Dict, List
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch.utils.data import DataLoader
+from transformers import GPT2LMHeadModel
 
 from app.shared.config import (
     CHECKPOINT_DIR,
@@ -14,38 +14,39 @@ from app.shared.config import (
     OPTION2_LEARNING_RATE,
     OPTION2_MAX_EPOCHS,
     OPTION2_PATIENCE,
-    OPTION2_PREFIX_SECONDS,
-    OPTION2_FRAME_RATE,
+    OPTION2_PREFIX_MAX_LEN,
     OPTION2_WEIGHT_DECAY,
 )
-from app.option2.symbolic_models import SymbolicTransformer
 
 
 def _step(
-    model: SymbolicTransformer,
+    model: GPT2LMHeadModel,
     prefix: torch.Tensor,
     continuation: torch.Tensor,
 ) -> torch.Tensor:
     """
-    One forward + loss computation step (teacher forcing).
+    One forward + loss step (teacher forcing, GPT-2 labels API).
 
-    Input layout:  [prefix | continuation[:-1]]  → (B, P+C-1, 88)
-    Target layout: continuation                  → (B, C, 88)
-    Loss window:   output positions [P-1 : P+C-1] predict continuation frames.
+    prefix:       (B, P) LongTensor
+    continuation: (B, C) LongTensor
+
+    Input  = [prefix | cont[:-1]]  shape (B, P+C-1)
+    Labels = [-100 * P | cont[:-1]] shape (B, P+C-1)
+    GPT-2 computes cross-entropy only where labels != -100,
+    so only the continuation positions contribute to the loss.
     """
-    prefix_len = prefix.size(1)
-
-    inp = torch.cat([prefix, continuation[:, :-1, :]], dim=1)  # (B, P+C-1, 88)
-    logits = model(inp)                                         # (B, P+C-1, 88)
-    pred = logits[:, prefix_len - 1 :, :]                       # (B, C, 88)
-
-    # Piano-roll is ~2-3% active; upweight positives so model learns to predict notes
-    pos_weight = torch.full((pred.size(-1),), 2.0, device=pred.device)
-    return F.binary_cross_entropy_with_logits(pred, continuation, pos_weight=pos_weight)
+    inp = torch.cat([prefix, continuation[:, :-1]], dim=1)        # (B, P+C-1)
+    labels = torch.cat([
+        torch.full_like(prefix, -100),
+        continuation[:, :-1],
+    ], dim=1)                                                      # (B, P+C-1)
+    # Mask PAD tokens (id=0) from attention so padding is ignored
+    attention_mask = (inp != 0).long()
+    return model(input_ids=inp, labels=labels, attention_mask=attention_mask).loss
 
 
 def train_one_epoch(
-    model: SymbolicTransformer,
+    model: GPT2LMHeadModel,
     loader: DataLoader,
     optimizer: torch.optim.Optimizer,
     device: torch.device,
@@ -53,7 +54,7 @@ def train_one_epoch(
     model.train()
     total_loss = 0.0
     for prefix, continuation in loader:
-        prefix = prefix.to(device)
+        prefix       = prefix.to(device)
         continuation = continuation.to(device)
         loss = _step(model, prefix, continuation)
         optimizer.zero_grad()
@@ -66,22 +67,21 @@ def train_one_epoch(
 
 @torch.no_grad()
 def evaluate(
-    model: SymbolicTransformer,
+    model: GPT2LMHeadModel,
     loader: DataLoader,
     device: torch.device,
 ) -> float:
     model.eval()
     total_loss = 0.0
     for prefix, continuation in loader:
-        prefix = prefix.to(device)
+        prefix       = prefix.to(device)
         continuation = continuation.to(device)
-        loss = _step(model, prefix, continuation)
-        total_loss += loss.item()
+        total_loss += _step(model, prefix, continuation).item()
     return total_loss / len(loader)
 
 
 def train(
-    model: SymbolicTransformer,
+    model: GPT2LMHeadModel,
     train_loader: DataLoader,
     val_loader: DataLoader,
     device: torch.device,
@@ -91,14 +91,9 @@ def train(
     lr: float = OPTION2_LEARNING_RATE,
     weight_decay: float = OPTION2_WEIGHT_DECAY,
 ) -> Dict[str, List[float]]:
-    """
-    Train model with early stopping. Returns history dict with train/val losses.
-    Best checkpoint (lowest val loss) saved to checkpoint_path.
-    """
+    """Train with early stopping; save best checkpoint by val loss."""
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
-    optimizer = torch.optim.Adam(
-        model.parameters(), lr=lr, weight_decay=weight_decay
-    )
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, patience=patience // 2, factor=0.5
     )
@@ -109,14 +104,13 @@ def train(
 
     for epoch in range(1, max_epochs + 1):
         train_loss = train_one_epoch(model, train_loader, optimizer, device)
-        val_loss = evaluate(model, val_loader, device)
+        val_loss   = evaluate(model, val_loader, device)
         scheduler.step(val_loss)
 
         history["train_loss"].append(train_loss)
         history["val_loss"].append(val_loss)
 
-        improved = val_loss < best_val_loss
-        if improved:
+        if val_loss < best_val_loss:
             best_val_loss = val_loss
             epochs_without_improvement = 0
             torch.save(
@@ -147,12 +141,11 @@ def train(
 
 
 def load_best_checkpoint(
-    model: SymbolicTransformer,
+    model: GPT2LMHeadModel,
     checkpoint_path: Path = CHECKPOINT_DIR / "option2_best.pt",
     device: torch.device = torch.device("cpu"),
-) -> SymbolicTransformer:
-    """Load the best saved checkpoint into model and return it."""
-    ckpt = torch.load(checkpoint_path, map_location=device)
+) -> GPT2LMHeadModel:
+    ckpt = torch.load(checkpoint_path, map_location=device, weights_only=True)
     model.load_state_dict(ckpt["model_state_dict"])
     print(f"Loaded checkpoint from epoch {ckpt['epoch']} (val_loss={ckpt['val_loss']:.4f})")
     return model.to(device)
