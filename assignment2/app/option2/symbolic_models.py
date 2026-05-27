@@ -10,6 +10,8 @@ Available via build_model(model_type, vocab_size):
     'gpt2'        - GPT2Wrapper         (~11M params)
 """
 
+from __future__ import annotations
+
 import math
 
 import torch
@@ -142,10 +144,17 @@ class SymbolicTransformerTokens(nn.Module):
         return torch.triu(torch.ones(seq_len, seq_len, device=device), diagonal=1).bool()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        T    = x.size(1)
-        h    = self.pos_enc(self.embedding(x))
-        mask = self._causal_mask(T, x.device)
-        h    = self.transformer(h, mask=mask, is_causal=True)
+        T        = x.size(1)
+        h        = self.pos_enc(self.embedding(x))
+        mask     = self._causal_mask(T, x.device)
+        # Mask PAD tokens (id=0) so they don't pollute attention
+        pad_mask = (x == 0)                          # (B, T) True where padding
+        h        = self.transformer(
+            h,
+            mask=mask,
+            src_key_padding_mask=pad_mask,
+            is_causal=True,
+        )
         return self.output_proj(h)
 
 
@@ -207,23 +216,30 @@ def generate_tokens(
     model: nn.Module,
     prefix_ids: torch.Tensor,
     max_new_tokens: int,
-    temperature: float = 1.0,
-    top_k: int = 50,
+    temperature: float = 0.8,
+    top_k: int = 10,
     device: str = "cpu",
+    eos_id: int = 2,
+    pad_id: int = 0,
 ) -> torch.Tensor:
     """
     Autoregressively generate max_new_tokens tokens after prefix_ids.
 
     Works with any model that implements forward(x: LongTensor) → (B, T, vocab_size).
+    Stops early when EOS is generated and pads the remainder.
 
     Args:
-        prefix_ids: (1, P) LongTensor
+        prefix_ids:     (1, P) LongTensor
+        eos_id:         token id for EOS (default=2); set to -1 to disable early stop
+        pad_id:         token id for PAD used to fill after EOS (default=0)
     Returns:
-        (1, max_new_tokens) LongTensor — generated tokens only
+        (1, max_new_tokens) LongTensor — generated tokens only (padded after EOS)
     """
     model.eval()
     model = model.to(device)
     context = prefix_ids.to(device)
+
+    generated: list[int] = []
 
     for _ in range(max_new_tokens):
         ctx    = context[:, -OPTION2_MAX_SEQ_LEN:]
@@ -236,9 +252,17 @@ def generate_tokens(
 
         probs    = F.softmax(logits, dim=-1)
         next_tok = torch.multinomial(probs, num_samples=1)  # (1, 1)
+        tok_val  = next_tok.item()
         context  = torch.cat([context, next_tok], dim=1)
+        generated.append(tok_val)
 
-    return context[:, prefix_ids.size(1):]  # generated part only
+        # Stop at EOS and pad the rest
+        if eos_id >= 0 and tok_val == eos_id:
+            generated.extend([pad_id] * (max_new_tokens - len(generated)))
+            break
+
+    gen_tensor = torch.tensor(generated, dtype=torch.long).unsqueeze(0).to(device)
+    return gen_tensor  # (1, max_new_tokens)
 
 
 # ---------------------------------------------------------------------------

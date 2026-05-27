@@ -74,8 +74,8 @@ def generate_conditioned(
     prefix_ids: torch.Tensor,
     cont_max_len: int,
     device: torch.device,
-    temperature: float = 1.0,
-    top_k: int = 50,
+    temperature: float = 0.8,
+    top_k: int = 10,
 ) -> torch.Tensor:
     """
     Run autoregressive token generation.
@@ -83,7 +83,7 @@ def generate_conditioned(
     Args:
         prefix_ids: (prefix_max_len,) LongTensor (1D)
     Returns:
-        (cont_max_len,) LongTensor — generated continuation tokens
+        (cont_max_len,) LongTensor — generated continuation tokens (padded after EOS)
     """
     generated = generate_tokens(
         model,
@@ -92,6 +92,8 @@ def generate_conditioned(
         temperature=temperature,
         top_k=top_k,
         device=str(device),
+        eos_id=2,    # REMI EOS token id
+        pad_id=0,    # REMI PAD token id
     )
     return generated.squeeze(0)  # (cont_max_len,)
 
@@ -132,8 +134,9 @@ def tokens_to_pianoroll(
                 end_f   = min(int(note.end * frame_rate), n_frames)
                 if start_f < n_frames:
                     roll[start_f:end_f, pitch_idx] = 1.0
-    except Exception:
-        pass  # return zeros on decode failure
+    except Exception as e:
+        import warnings
+        warnings.warn(f"REMI decode failed ({len(ids)} tokens): {e}")
 
     return roll
 
@@ -146,8 +149,8 @@ def save_symbolic_conditioned(
     output_path: Optional[Path] = None,
     prefix_seconds: float = OPTION2_PREFIX_SECONDS,
     continuation_seconds: float = OPTION2_CONTINUATION_SECONDS,
-    temperature: float = 1.0,
-    top_k: int = 50,
+    temperature: float = 0.8,
+    top_k: int = 10,
 ) -> Path:
     """
     Full pipeline: tokenize prefix → generate continuation tokens → decode → save .mid.
