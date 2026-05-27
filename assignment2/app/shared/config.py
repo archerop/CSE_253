@@ -96,17 +96,17 @@ OPTION2_PREFIX_SECONDS = 4.0     # prefix duration fed as conditioning
 OPTION2_CONTINUATION_SECONDS = 4.0  # continuation duration to generate
 OPTION2_STRIDE_SECONDS = 2.0     # stride between consecutive windows
 
-OPTION2_D_MODEL = 192            # ~1.9M params — fits T4 comfortably
-OPTION2_NHEAD = 8                # head_dim = 192/8 = 24
+OPTION2_D_MODEL = 128            # ~0.88M params
+OPTION2_NHEAD = 4
 OPTION2_NUM_LAYERS = 4
-OPTION2_DIM_FEEDFORWARD = 768    # 4 × d_model
+OPTION2_DIM_FEEDFORWARD = 512
 OPTION2_DROPOUT = 0.1
 
 OPTION2_BATCH_SIZE = 32
 OPTION2_LEARNING_RATE = 3e-4     # was 1e-3 — lower LR for stabler training
 OPTION2_WEIGHT_DECAY = 1e-4
-OPTION2_MAX_EPOCHS = 50          # was 20 — more room to converge
-OPTION2_PATIENCE = 8             # was 5
+OPTION2_MAX_EPOCHS = 15
+OPTION2_PATIENCE = 5
 
 OPTION2_PREFIX_MAX_LEN = 256     # max tokens for 4s prefix
 OPTION2_CONT_MAX_LEN   = 256     # max tokens for 4s continuation
