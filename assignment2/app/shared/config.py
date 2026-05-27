@@ -96,10 +96,10 @@ OPTION2_PREFIX_SECONDS = 4.0     # prefix duration fed as conditioning
 OPTION2_CONTINUATION_SECONDS = 4.0  # continuation duration to generate
 OPTION2_STRIDE_SECONDS = 2.0     # stride between consecutive windows
 
-OPTION2_D_MODEL = 256            # was 128 — doubled for better capacity
-OPTION2_NHEAD = 8                # was 4
-OPTION2_NUM_LAYERS = 6           # was 4
-OPTION2_DIM_FEEDFORWARD = 1024   # was 512
+OPTION2_D_MODEL = 192            # ~1.9M params — fits T4 comfortably
+OPTION2_NHEAD = 8                # head_dim = 192/8 = 24
+OPTION2_NUM_LAYERS = 4
+OPTION2_DIM_FEEDFORWARD = 768    # 4 × d_model
 OPTION2_DROPOUT = 0.1
 
 OPTION2_BATCH_SIZE = 32
