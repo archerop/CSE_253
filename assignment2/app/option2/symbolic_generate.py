@@ -76,6 +76,8 @@ def generate_conditioned(
     device: torch.device,
     temperature: float = 0.8,
     top_k: int = 10,
+    eos_id: int = 2,
+    pad_id: int = 0,
 ) -> torch.Tensor:
     """
     Run autoregressive token generation.
@@ -92,8 +94,8 @@ def generate_conditioned(
         temperature=temperature,
         top_k=top_k,
         device=str(device),
-        eos_id=2,    # REMI EOS token id
-        pad_id=0,    # REMI PAD token id
+        eos_id=eos_id,
+        pad_id=pad_id,
     )
     return generated.squeeze(0)  # (cont_max_len,)
 
@@ -109,9 +111,10 @@ def tokens_to_pianoroll(
 
     Returns an array of zeros if decoding produces no notes.
     """
-    # Strip padding
+    # Strip padding and EOS — neither carries musical information
     pad_id  = tokenizer["PAD_None"]
-    ids     = [t for t in token_ids if t != pad_id]
+    eos_id  = tokenizer["EOS_None"]
+    ids     = [t for t in token_ids if t not in (pad_id, eos_id)]
 
     n_frames = int(np.ceil(duration_seconds * frame_rate))
     roll     = np.zeros((n_frames, N_PITCHES), dtype=np.float32)
@@ -165,7 +168,11 @@ def save_symbolic_conditioned(
     prefix_ids = extract_prefix(prefix_midi_path, tokenizer, prefix_seconds)
 
     # 2. Generate continuation tokens
-    cont_ids = generate_conditioned(model, prefix_ids, OPTION2_CONT_MAX_LEN, device, temperature, top_k)
+    cont_ids = generate_conditioned(
+        model, prefix_ids, OPTION2_CONT_MAX_LEN, device, temperature, top_k,
+        eos_id=tokenizer["EOS_None"],
+        pad_id=tokenizer["PAD_None"],
+    )
 
     # 3. Build prefix MIDI from original file (preserves original velocity/timing)
     original_pm   = pretty_midi.PrettyMIDI(prefix_midi_path)
@@ -186,7 +193,8 @@ def save_symbolic_conditioned(
 
     # 4. Decode continuation tokens → pretty_midi → shift by prefix_seconds
     pad_id   = tokenizer["PAD_None"]
-    ids      = [t for t in cont_ids.tolist() if t != pad_id]
+    eos_id   = tokenizer["EOS_None"]
+    ids      = [t for t in cont_ids.tolist() if t not in (pad_id, eos_id)]
     cont_pm  = pretty_midi.PrettyMIDI()
     if ids:
         try:
