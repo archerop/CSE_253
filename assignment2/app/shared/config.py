@@ -96,17 +96,18 @@ OPTION2_PREFIX_SECONDS = 4.0     # prefix duration fed as conditioning
 OPTION2_CONTINUATION_SECONDS = 4.0  # continuation duration to generate
 OPTION2_STRIDE_SECONDS = 2.0     # stride between consecutive windows
 
-OPTION2_D_MODEL = 128            # ~0.88M params
-OPTION2_NHEAD = 4
-OPTION2_NUM_LAYERS = 4
-OPTION2_DIM_FEEDFORWARD = 512
+OPTION2_D_MODEL = 256            # was 128 — width bump (Option A), ~3.2M params
+OPTION2_NHEAD = 8                # was 4  — keep d_model/nhead = 32
+OPTION2_NUM_LAYERS = 4           # unchanged — depth preserved, scale width first
+OPTION2_DIM_FEEDFORWARD = 1024   # was 512 — keep 4× d_model ratio
 OPTION2_DROPOUT = 0.1
 
 OPTION2_BATCH_SIZE = 32
 OPTION2_LEARNING_RATE = 3e-4     # was 1e-3 — lower LR for stabler training
 OPTION2_WEIGHT_DECAY = 1e-4
-OPTION2_MAX_EPOCHS = 50
-OPTION2_PATIENCE = 8
+OPTION2_MAX_EPOCHS = 60       # bumped from 50 to give cosine LR schedule room to anneal
+OPTION2_WARMUP_EPOCHS = 3     # ~5% of max_epochs — linear warmup before cosine decay
+OPTION2_PATIENCE = 12         # was 8 — bumped so cosine schedule can finish without early-stopping
 
 OPTION2_PREFIX_MAX_LEN = 256     # max tokens for 4s prefix
 OPTION2_CONT_MAX_LEN   = 256     # max tokens for 4s continuation

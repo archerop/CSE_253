@@ -14,6 +14,7 @@ from app.shared.config import (
     OPTION2_LEARNING_RATE,
     OPTION2_MAX_EPOCHS,
     OPTION2_PATIENCE,
+    OPTION2_WARMUP_EPOCHS,
     OPTION2_WEIGHT_DECAY,
 )
 
@@ -91,12 +92,22 @@ def train(
     patience: int = OPTION2_PATIENCE,
     lr: float = OPTION2_LEARNING_RATE,
     weight_decay: float = OPTION2_WEIGHT_DECAY,
+    warmup_epochs: int = OPTION2_WARMUP_EPOCHS,
 ) -> Dict[str, List[float]]:
     """Train with early stopping; save best checkpoint by val loss."""
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, patience=patience // 2, factor=0.5
+    # Linear warmup (lr * 0.1 -> lr over warmup_epochs) then cosine decay to lr/100
+    # over the remaining epochs. Warmup prevents early-step instability for the
+    # wider Option-A transformer (~3.2M params); cosine extracts the long tail.
+    warmup = torch.optim.lr_scheduler.LinearLR(
+        optimizer, start_factor=0.1, end_factor=1.0, total_iters=warmup_epochs
+    )
+    cosine = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer, T_max=max(1, max_epochs - warmup_epochs), eta_min=lr / 100.0
+    )
+    scheduler = torch.optim.lr_scheduler.SequentialLR(
+        optimizer, schedulers=[warmup, cosine], milestones=[warmup_epochs]
     )
 
     history: Dict[str, List[float]] = {"train_loss": [], "val_loss": []}
@@ -106,7 +117,7 @@ def train(
     for epoch in range(1, max_epochs + 1):
         train_loss = train_one_epoch(model, train_loader, optimizer, device)
         val_loss   = evaluate(model, val_loader, device)
-        scheduler.step(val_loss)
+        scheduler.step()  # CosineAnnealingLR is epoch-based, no val_loss arg
 
         history["train_loss"].append(train_loss)
         history["val_loss"].append(val_loss)
