@@ -1,0 +1,52 @@
+{
+  "subset_name": "debug",
+  "split": "validation",
+  "sample_index": 10,
+  "window_id": "option4_validation_maestro_0037_0000040000ms",
+  "piece_id": "maestro_0037",
+  "composer": "Alexander Scriabin",
+  "title": "Waltz, Op. 38",
+  "start_sec": 40.0,
+  "clip_seconds": 4.0,
+  "sample_rate": 22050,
+  "n_fft": 1024,
+  "n_freq_bins": 513,
+  "hop_length": 256,
+  "win_length": 1024,
+  "center": true,
+  "griffinlim_n_iter": 256,
+  "normalization": "match-rms",
+  "audio_outputs": {
+    "ground_truth_original": {
+      "wav": "/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/audio/stft_model_render_examples/debug_validation_sample10_nfft1024/ground_truth_original.wav",
+      "mp3": null
+    },
+    "ground_truth_stft_reconstruction": {
+      "wav": "/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/audio/stft_model_render_examples/debug_validation_sample10_nfft1024/ground_truth_stft_reconstruction_iter256.wav",
+      "mp3": null
+    },
+    "stft_residual_cnn": {
+      "wav": "/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/audio/stft_model_render_examples/debug_validation_sample10_nfft1024/stft_residual_cnn_generated_iter256.wav",
+      "mp3": null
+    },
+    "stft_unet": {
+      "wav": "/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/audio/stft_model_render_examples/debug_validation_sample10_nfft1024/stft_unet_generated_iter256.wav",
+      "mp3": null
+    }
+  },
+  "metrics": {
+    "stft_residual_cnn": {
+      "stft_l1": 0.0777621641755104,
+      "stft_mse": 0.03179999068379402,
+      "energy_l1": 0.019436940550804138,
+      "onset_l1": 0.0033975711558014154
+    },
+    "stft_unet": {
+      "stft_l1": 0.07406412810087204,
+      "stft_mse": 0.029699653387069702,
+      "energy_l1": 0.019164415076375008,
+      "onset_l1": 0.0034184979740530252
+    }
+  },
+  "figure": "/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/audio/stft_model_render_examples/debug_validation_sample10_nfft1024/stft_rendering_comparison.png"
+}

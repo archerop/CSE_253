@@ -1,0 +1,2 @@
+model,subset,split,checkpoint,logmel_l1,logmel_mse,energy_l1,onset_l1,loss
+simple_cnn,smoke,validation,/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/checkpoints/simple_cnn_smoke_best.pt,0.07839906960725784,0.06361458683386445,4.33578097820282,0.23588385432958603,0.07839906960725784

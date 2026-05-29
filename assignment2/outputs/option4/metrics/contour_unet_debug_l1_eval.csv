@@ -1,0 +1,2 @@
+model,subset,split,checkpoint,loss_mode,weighted_alpha,energy_weight,onset_weight,condition_strength,logmel_l1,logmel_mse,energy_l1,onset_l1,loss
+contour_unet_lite,debug,validation,/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/checkpoints/contour_unet_debug_l1_best.pt,l1,4.0,0.005,0.02,1.0,0.05344953970983624,0.041602498525753616,3.1596382874250413,0.2500896104425192,0.05344953970983624

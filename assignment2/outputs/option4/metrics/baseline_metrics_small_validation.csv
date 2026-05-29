@@ -1,0 +1,3 @@
+baseline,subset,split,num_examples,batch_size,max_batches,heuristic_strength,logmel_l1,logmel_mse,energy_l1,onset_l1
+silence,small,validation,1000,16,all,,0.08025438904762268,0.09799313661456108,6.420351236343384,0.3016027585268021
+heuristic_note_to_mel,small,validation,1000,16,all,0.25,0.07990868666768074,0.09510095898807049,5.926674533843994,0.3171726793050766

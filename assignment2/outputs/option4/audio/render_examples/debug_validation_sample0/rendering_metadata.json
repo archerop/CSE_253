@@ -1,0 +1,54 @@
+{
+  "subset_name": "debug",
+  "split": "validation",
+  "sample_index": 0,
+  "window_id": "option4_validation_maestro_0004_0000076000ms",
+  "piece_id": "maestro_0004",
+  "composer": "Alexander Scriabin",
+  "title": "3 Etudes, Op. 65",
+  "start_sec": 76.0,
+  "clip_seconds": 4.0,
+  "sample_rate": 22050,
+  "n_fft": 1024,
+  "hop_length": 256,
+  "win_length": 1024,
+  "n_mels": 80,
+  "fmin": 30.0,
+  "fmax": 11025.0,
+  "center": true,
+  "griffinlim_n_iter": 256,
+  "normalize": true,
+  "audio_outputs": {
+    "ground_truth_original": {
+      "wav": "/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/audio/render_examples/debug_validation_sample0/ground_truth_original.wav",
+      "mp3": null
+    },
+    "ground_truth_logmel_reconstruction": {
+      "wav": "/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/audio/render_examples/debug_validation_sample0/ground_truth_logmel_reconstruction.wav",
+      "mp3": null
+    },
+    "contour_unet_l1": {
+      "wav": "/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/audio/render_examples/debug_validation_sample0/contour_unet_l1_generated.wav",
+      "mp3": null
+    },
+    "contour_unet_weighted": {
+      "wav": "/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/audio/render_examples/debug_validation_sample0/contour_unet_weighted_generated.wav",
+      "mp3": null
+    }
+  },
+  "metrics": {
+    "contour_unet_l1": {
+      "logmel_l1": 0.020367711782455444,
+      "logmel_mse": 0.007697897031903267,
+      "energy_l1": 1.3870537281036377,
+      "onset_l1": 0.10877915471792221
+    },
+    "contour_unet_weighted": {
+      "logmel_l1": 0.021750548854470253,
+      "logmel_mse": 0.007572169881314039,
+      "energy_l1": 1.0936676263809204,
+      "onset_l1": 0.11334389448165894
+    }
+  },
+  "figure": "/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/audio/render_examples/debug_validation_sample0/rendering_comparison.png"
+}

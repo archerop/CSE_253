@@ -1,0 +1,2 @@
+model,subset,split,checkpoint,loss_mode,weighted_alpha,energy_weight,onset_weight,logmel_l1,logmel_mse,energy_l1,onset_l1,loss
+residual_dilated_cnn,smoke,overfit_train_subset,/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/checkpoints/residual_cnn_smoke_weighted_energy_onset_overfit16_best.pt,weighted_energy_onset,4.0,0.005,0.02,0.09237425681203604,0.06690764962695539,3.4531962871551514,0.25365385599434376,0.2234465479850769

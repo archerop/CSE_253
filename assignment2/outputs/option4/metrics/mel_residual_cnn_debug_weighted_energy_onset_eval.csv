@@ -1,0 +1,2 @@
+model,subset,split,checkpoint,loss_mode,weighted_alpha,energy_weight,onset_weight,condition_strength,hidden_channels,num_blocks,logmel_l1,logmel_mse,energy_l1,onset_l1,loss
+mel_projected_residual_cnn,debug,validation,/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/checkpoints/mel_residual_cnn_debug_weighted_energy_onset_best.pt,weighted_energy_onset,4.0,0.005,0.02,1.0,64,8,0.05708897748962045,0.038029071358032525,2.8924842250347136,0.2452358951419592,0.1637492099776864

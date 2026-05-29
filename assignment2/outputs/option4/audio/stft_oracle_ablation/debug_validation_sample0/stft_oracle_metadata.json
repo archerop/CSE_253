@@ -1,0 +1,76 @@
+{
+  "subset_name": "debug",
+  "split": "validation",
+  "sample_index": 0,
+  "window_id": "option4_validation_maestro_0004_0000076000ms",
+  "piece_id": "maestro_0004",
+  "composer": "Alexander Scriabin",
+  "title": "3 Etudes, Op. 65",
+  "start_sec": 76.0,
+  "clip_seconds": 4.0,
+  "sample_rate": 22050,
+  "hop_length": 256,
+  "current_logmel_n_fft": 1024,
+  "current_logmel_win_length": 1024,
+  "current_logmel_n_mels": 80,
+  "current_logmel_fmin": 30.0,
+  "current_logmel_fmax": 11025.0,
+  "center": true,
+  "n_iters": [
+    64,
+    128,
+    256
+  ],
+  "stft_n_ffts": [
+    1024,
+    2048
+  ],
+  "stft_win_lengths": [
+    1024,
+    2048
+  ],
+  "normalize": true,
+  "audio_outputs": {
+    "ground_truth_original": {
+      "wav": "/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/audio/stft_oracle_ablation/debug_validation_sample0/ground_truth_original.wav",
+      "mp3": null
+    },
+    "gt_logmel_reconstruction_iter64": {
+      "wav": "/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/audio/stft_oracle_ablation/debug_validation_sample0/gt_logmel_reconstruction_iter64.wav",
+      "mp3": null
+    },
+    "gt_logmel_reconstruction_iter128": {
+      "wav": "/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/audio/stft_oracle_ablation/debug_validation_sample0/gt_logmel_reconstruction_iter128.wav",
+      "mp3": null
+    },
+    "gt_logmel_reconstruction_iter256": {
+      "wav": "/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/audio/stft_oracle_ablation/debug_validation_sample0/gt_logmel_reconstruction_iter256.wav",
+      "mp3": null
+    },
+    "gt_stft_reconstruction_nfft1024_win1024_iter64": {
+      "wav": "/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/audio/stft_oracle_ablation/debug_validation_sample0/gt_stft_reconstruction_nfft1024_win1024_iter64.wav",
+      "mp3": null
+    },
+    "gt_stft_reconstruction_nfft1024_win1024_iter128": {
+      "wav": "/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/audio/stft_oracle_ablation/debug_validation_sample0/gt_stft_reconstruction_nfft1024_win1024_iter128.wav",
+      "mp3": null
+    },
+    "gt_stft_reconstruction_nfft1024_win1024_iter256": {
+      "wav": "/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/audio/stft_oracle_ablation/debug_validation_sample0/gt_stft_reconstruction_nfft1024_win1024_iter256.wav",
+      "mp3": null
+    },
+    "gt_stft_reconstruction_nfft2048_win2048_iter64": {
+      "wav": "/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/audio/stft_oracle_ablation/debug_validation_sample0/gt_stft_reconstruction_nfft2048_win2048_iter64.wav",
+      "mp3": null
+    },
+    "gt_stft_reconstruction_nfft2048_win2048_iter128": {
+      "wav": "/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/audio/stft_oracle_ablation/debug_validation_sample0/gt_stft_reconstruction_nfft2048_win2048_iter128.wav",
+      "mp3": null
+    },
+    "gt_stft_reconstruction_nfft2048_win2048_iter256": {
+      "wav": "/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/audio/stft_oracle_ablation/debug_validation_sample0/gt_stft_reconstruction_nfft2048_win2048_iter256.wav",
+      "mp3": null
+    }
+  },
+  "figure": "/home/archerop/CSE_253/CSE_253/assignment2/outputs/option4/audio/stft_oracle_ablation/debug_validation_sample0/stft_oracle_comparison.png"
+}

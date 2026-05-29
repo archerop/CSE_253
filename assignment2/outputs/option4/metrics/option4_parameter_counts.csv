@@ -1,0 +1,4 @@
+model,checkpoint,input_channels,total_params,trainable_params
+basic_stft_unet,outputs/option4/checkpoints/stft_unet_small_weighted_energy_onset_nfft1024_best.pt,3,5050921,5050921
+enhanced_stft_unet,outputs/option4/checkpoints/enhanced_stft_unet_small_weighted_energy_onset_sc0.05_nfft1024_best.pt,6,5051641,5051641
+enhanced_texture_refiner,outputs/option4/checkpoints/enhanced_texture_refiner_small_weighted_energy_onset_sc0.05_bands8_nfft1024_best.pt,1 initial + 6 condition,462344,462344

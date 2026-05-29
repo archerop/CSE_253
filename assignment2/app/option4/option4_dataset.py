@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-from app.shared.config import (
+from app.shared.config import  (
     SAMPLE_RATE,
     HOP_LENGTH,
     FRAME_RATE,
